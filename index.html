@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Yellow Haven Lodge - Invoice Generator</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>YELLOW HAVEN LODGE</h1>
+    <h2>Invoice Generator</h2>
+
+    <!-- Guest Info -->
+    <div class="form-group">
+      <label for="guest">Guest Name:</label>
+      <input type="text" id="guest" placeholder="e.g., The Or Foundation">
+    </div>
+
+    <div class="form-group">
+      <label for="checkin">Check-in Date:</label>
+      <input type="text" id="checkin" placeholder="e.g., 18 June 2025">
+    </div>
+
+    <div class="form-group">
+      <label for="checkout">Check-out Date:</label>
+      <input type="text" id="checkout" placeholder="e.g., 21 June 2025">
+    </div>
+
+    <!-- Room Selection -->
+    <h3 class="section-title">Room Selection</h3>
+    <div id="room-list"></div>
+    <button class="add-room" onclick="addRoom()">+ Add Another Room</button>
+
+    <!-- Extras -->
+    <h3 class="section-title">Extras</h3>
+    <div class="form-group">
+      <label for="conference-days">Conference Room ($120/day):</label>
+      <input type="number" id="conference-days" value="0">
+    </div>
+
+    <div class="form-group">
+      <label for="pa-days">PA System ($40/day):</label>
+      <input type="number" id="pa-days" value="0">
+    </div>
+
+    <!-- Breakfast -->
+    <h3 class="section-title">Breakfast ($10/person/day)</h3>
+    <div class="form-group">
+      <label for="breakfast-guests">Number of Guests:</label>
+      <input type="number" id="breakfast-guests" value="0">
+    </div>
+
+    <div class="form-group">
+      <label for="breakfast-days">Number of Days:</label>
+      <input type="number" id="breakfast-days" value="0">
+    </div>
+
+    <!-- Discount -->
+    <h3 class="section-title">Discount</h3>
+    <div class="form-group">
+      <label for="discount">Apply Discount (%):</label>
+      <select id="discount">
+        <option value="0">0%</option>
+        <option value="10">10%</option>
+        <option value="15">15%</option>
+        <option value="20">20%</option>
+      </select>
+    </div>
+
+    <!-- Generate Button -->
+    <div style="text-align:center; margin-top:20px;">
+      <button class="primary" onclick="generateInvoice()">Generate Invoice</button>
+    </div>
+
+    <!-- Invoice Preview -->
+    <div class="invoice-preview" id="invoice-preview">
+      Your invoice will appear here...
+    </div>
+  </div>
+
+  <script>
+    const rooms = [];
+
+    function addRoom() {
+      const index = rooms.length;
+      const container = document.getElementById('room-list');
+
+      const div = document.createElement('div');
+      div.className = 'room-row';
+
+      div.innerHTML = `
+        <select required>
+          <option value="">Select Room</option>
+          <option value="Crested Crane">Crested Crane</option>
+          <option value="Wild Geese">Wild Geese</option>
+          <option value="Kingfisher">Kingfisher</option>
+          <option value="Ross Turaco">Ross Turaco</option>
+          <option value="Tower">Tower</option>
+          <option value="Wax Bill">Wax Bill</option>
+          <option value="Starling">Starling</option>
+          <option value="Ibis">Ibis</option>
+          <option value="Caven">Caven</option>
+          <option value="Tree House The Crown">Tree House The Crown</option>
+          <option value="Sunbird">Sunbird</option>
+        </select>
+        <input type="number" min="1" max="5" value="1" placeholder="Pax">
+        <button type="button" onclick="removeRoom(this)">Remove</button>
+      `;
+
+      container.appendChild(div);
+      rooms.push(div);
+    }
+
+    function removeRoom(btn) {
+      const parent = btn.parentElement;
+      parent.remove();
+    }
+
+    function generateInvoice() {
+      const guest = document.getElementById("guest").value;
+      const checkin = document.getElementById("checkin").value;
+      const checkout = document.getElementById("checkout").value;
+      const conferenceDays = parseFloat(document.getElementById("conference-days").value) || 0;
+      const paDays = parseFloat(document.getElementById("pa-days").value) || 0;
+      const breakfastGuests = parseInt(document.getElementById("breakfast-guests").value) || 0;
+      const breakfastDays = parseInt(document.getElementById("breakfast-days").value) || 0;
+      const discountPercent = parseFloat(document.getElementById("discount").value) / 100;
+
+      let output = `Guest: ${guest}\n`;
+      output += `Dates: ${checkin} – ${checkout}\n\n`;
+
+      output += "Room Charges:\n";
+      let roomTotal = 0;
+
+      const ROOM_RATES = {
+        "Crested Crane": [98, 120, 142, 164],
+        "Wild Geese": [135, 157, 179],
+        "Kingfisher": [110, 132, 154, 176, 198],
+        "Ross Turaco": [110, 132, 154],
+        "Tower": [55, 77],
+        "Wax Bill": [95, 117, 139, 161],
+        "Starling": [85, 107],
+        "Ibis": [75, 98, 120],
+        "Caven": [100, 122],
+        "Tree House The Crown": [100, 122],
+        "Sunbird": [98, 120, 142],
+      };
+
+      const EXTRA_RATE = 22;
+
+      document.querySelectorAll('.room-row').forEach(row => {
+        const roomName = row.querySelector('select').value;
+        const pax = parseInt(row.querySelector('input[type="number"]').value);
+
+        if (!roomName || !pax) return;
+
+        const rates = ROOM_RATES[roomName];
+        let rate = 0;
+
+        if (pax <= rates.length) {
+          rate = rates[pax - 1];
+        } else {
+          rate = rates[rates.length - 1] + (pax - rates.length) * EXTRA_RATE;
+        }
+
+        output += `${roomName} (${pax} Pax): $${rate.toFixed(2)}\n`;
+        roomTotal += rate;
+      });
+
+      output += `\nSubtotal (Rooms): $${roomTotal.toFixed(2)}\n`;
+
+      const discountAmount = roomTotal * discountPercent;
+      output += `Discount (${discountPercent * 100}%): -$${discountAmount.toFixed(2)}\n`;
+
+      const breakfastTotal = breakfastGuests * breakfastDays * 10;
+      output += `Breakfast: $${breakfastTotal.toFixed(2)}\n`;
+
+      const conferenceTotal = conferenceDays * 120;
+      output += `Conference Room: $${conferenceTotal.toFixed(2)}\n`;
+
+      const paTotal = paDays * 40;
+      output += `PA System: $${paTotal.toFixed(2)}\n`;
+
+      const grandTotal = (roomTotal - discountAmount) + breakfastTotal + conferenceTotal + paTotal;
+      output += `\nGrand Total: $${grandTotal.toFixed(2)}\n`;
+
+      document.getElementById("invoice-preview").textContent = output;
+    }
+
+    // Add one room by default
+    window.onload = () => addRoom();
+  </script>
+</body>
+</html>
